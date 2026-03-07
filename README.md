@@ -28,7 +28,7 @@ Add the following to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Rivium-co/rivium-trace-ios-sdk.git", from: "1.1.0")
+    .package(url: "https://github.com/Rivium-co/rivium-trace-ios-sdk.git", from: "0.1.0")
 ]
 ```
 
@@ -39,7 +39,7 @@ Or in Xcode: **File → Add Packages** → Enter the repository URL.
 Add to your `Podfile`:
 
 ```ruby
-pod 'RiviumTrace', '~> 1.1'
+pod 'RiviumTrace', '~> 0.1'
 ```
 
 Then run:
@@ -53,7 +53,7 @@ pod install
 Add to your `Cartfile`:
 
 ```
-github "Rivium-co/rivium-trace-ios-sdk" ~> 1.1
+github "Rivium-co/rivium-trace-ios-sdk" ~> 0.1
 ```
 
 ## Quick Start
