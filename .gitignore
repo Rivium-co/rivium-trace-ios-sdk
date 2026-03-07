@@ -1,0 +1,64 @@
+# Xcode
+#
+# gitignore contributors: remember to update Global Business Scenario
+# gitignore to reflect any changes
+## User settings
+xcuserdata/
+
+## Compatibility with Xcode 8 and earlier (Xcode 8 supports Swift 3.0)
+*.xcscmblueprint
+*.xccheckout
+
+## Xcode build files
+build/
+DerivedData/
+
+## Obj-C/Swift specific
+*.hmap
+
+## App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+## Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Package.resolved
+Packages/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+iOSInjectionProject/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Claude settings
+.claude/
+
+# Build output
+output/
