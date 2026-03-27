@@ -11,6 +11,8 @@
 		A1000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002 /* ContentView.swift */; };
 		A1000003 /* SecondView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000003 /* SecondView.swift */; };
 		A85C76382F458CF4006BFBC7 /* RiviumTrace in Frameworks */ = {isa = PBXBuildFile; productRef = A8000001 /* RiviumTrace */; };
+		A88188562F766AE40061C4DD /* RiviumTrace in Frameworks */ = {isa = PBXBuildFile; productRef = A88188552F766AE40061C4DD /* RiviumTrace */; };
+		A88188592F766B570061C4DD /* RiviumTrace in Frameworks */ = {isa = PBXBuildFile; productRef = A88188582F766B570061C4DD /* RiviumTrace */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +27,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A88188562F766AE40061C4DD /* RiviumTrace in Frameworks */,
+				A88188592F766B570061C4DD /* RiviumTrace in Frameworks */,
 				A85C76382F458CF4006BFBC7 /* RiviumTrace in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -75,6 +79,8 @@
 			name = RiviumTraceExample;
 			packageProductDependencies = (
 				A8000001 /* RiviumTrace */,
+				A88188552F766AE40061C4DD /* RiviumTrace */,
+				A88188582F766B570061C4DD /* RiviumTrace */,
 			);
 			productName = RiviumTraceExample;
 			productReference = A2000010 /* RiviumTraceExample.app */;
@@ -100,7 +106,7 @@
 			);
 			mainGroup = A4000001;
 			packageReferences = (
-				AA000001 /* XCLocalSwiftPackageReference "../.." */,
+				A88188572F766B570061C4DD /* XCLocalSwiftPackageReference "../../../rivium-trace-ios-sdk" */,
 			);
 			productRefGroup = A4000003 /* Products */;
 			projectDirPath = "";
@@ -319,14 +325,22 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		AA000001 /* XCLocalSwiftPackageReference "../.." */ = {
+		A88188572F766B570061C4DD /* XCLocalSwiftPackageReference "../../../rivium-trace-ios-sdk" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../..;
+			relativePath = "../../../rivium-trace-ios-sdk";
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		A8000001 /* RiviumTrace */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RiviumTrace;
+		};
+		A88188552F766AE40061C4DD /* RiviumTrace */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RiviumTrace;
+		};
+		A88188582F766B570061C4DD /* RiviumTrace */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RiviumTrace;
 		};

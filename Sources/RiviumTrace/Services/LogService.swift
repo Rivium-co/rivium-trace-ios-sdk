@@ -10,7 +10,7 @@ import UIKit
 /// - Exponential backoff: retries with increasing delays (1s, 2s, 4s, 8s...)
 /// - Max buffer size: drops oldest logs when buffer exceeds limit
 /// - Lifecycle hooks: flushes on app background
-public class LogService {
+public class LogService: @unchecked Sendable {
     // MARK: - Properties
 
     private let apiKey: String
@@ -31,7 +31,7 @@ public class LogService {
     private let queue = DispatchQueue(label: "co.rivium.trace.logservice", qos: .utility)
     private let session: URLSession
 
-    private let apiEndpoint = "https://trace.rivium.co"
+    private let apiEndpoint: String
 
     // Exponential backoff constants
     private let baseRetryDelay: TimeInterval = 1.0
@@ -42,6 +42,7 @@ public class LogService {
 
     public init(
         apiKey: String,
+        apiUrl: String = "https://trace.rivium.co",
         sourceId: String? = nil,
         sourceName: String? = nil,
         platform: String = "ios",
@@ -52,6 +53,7 @@ public class LogService {
         maxBufferSize: Int = 1000
     ) {
         self.apiKey = apiKey
+        self.apiEndpoint = apiUrl
         self.sourceId = sourceId
         self.sourceName = sourceName
         self.platform = platform

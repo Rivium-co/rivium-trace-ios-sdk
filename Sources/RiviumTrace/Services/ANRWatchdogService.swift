@@ -2,7 +2,7 @@ import Foundation
 
 /// ANR (Application Not Responding) Watchdog Service
 /// Detects main thread hangs that could cause the app to appear frozen
-public class ANRWatchdogService {
+public class ANRWatchdogService: @unchecked Sendable {
 
     /// Shared instance
     public static let shared = ANRWatchdogService()

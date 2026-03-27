@@ -2,7 +2,7 @@ import Foundation
 import os.log
 
 /// Internal logger for RiviumTrace SDK
-public class RiviumTraceLogger {
+public class RiviumTraceLogger: @unchecked Sendable {
     public static let shared = RiviumTraceLogger()
 
     private let subsystem = "co.rivium.trace.sdk"

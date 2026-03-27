@@ -1,11 +1,11 @@
 import Foundation
 
 /// HTTP client for RiviumTrace API
-public class RiviumTraceClient {
+public class RiviumTraceClient: @unchecked Sendable {
 
     private let config: RiviumTraceConfig
     private let session: URLSession
-    private let baseURL = "https://trace.rivium.co"
+    private let baseURL: String
 
     private let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -21,6 +21,7 @@ public class RiviumTraceClient {
 
     public init(config: RiviumTraceConfig) {
         self.config = config
+        self.baseURL = config.apiUrl
 
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = config.httpTimeout

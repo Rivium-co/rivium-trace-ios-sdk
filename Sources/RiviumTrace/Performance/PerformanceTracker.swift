@@ -14,7 +14,7 @@ import Foundation
 ///     await api.fetchProfile()
 /// }
 /// ```
-public class PerformanceTracker {
+public class PerformanceTracker: @unchecked Sendable {
 
     // MARK: - Properties
 

@@ -31,7 +31,7 @@ import AppKit
 /// // Add breadcrumbs
 /// RiviumTrace.shared.addBreadcrumb("Button clicked", type: .user)
 /// ```
-public class RiviumTrace {
+public class RiviumTrace: @unchecked Sendable {
 
     // MARK: - Singleton
 
@@ -72,6 +72,9 @@ public class RiviumTrace {
         self.config = config
         self.client = RiviumTraceClient(config: config)
         self.userAgent = DeviceInfo.shared.userAgent
+
+        // Ensure the configured API host is never tracked as a performance span
+        RiviumTraceURLProtocol.setApiUrl(config.apiUrl)
 
         // Set debug mode
         RiviumTraceLogger.shared.isDebugEnabled = config.debug
@@ -509,6 +512,7 @@ public class RiviumTrace {
 
         logService = LogService(
             apiKey: cfg.apiKey,
+            apiUrl: cfg.apiUrl,
             sourceId: sourceId,
             sourceName: sourceName,
             platform: "ios",

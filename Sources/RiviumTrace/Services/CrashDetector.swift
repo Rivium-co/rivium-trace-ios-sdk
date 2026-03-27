@@ -11,7 +11,7 @@ import UIKit
 /// 5. If app crashes while in foreground, no clean exit marker exists → crash detected on next launch
 ///
 /// This prevents false crash detection when user swipes the app away normally.
-public class CrashDetector {
+public class CrashDetector: @unchecked Sendable {
 
     /// Shared instance
     public static let shared = CrashDetector()
@@ -289,7 +289,7 @@ public class CrashDetector {
 // MARK: - Signal Crash Handler
 
 /// Signal handler for native crashes
-public class SignalCrashHandler {
+public class SignalCrashHandler: @unchecked Sendable {
 
     public static let shared = SignalCrashHandler()
 

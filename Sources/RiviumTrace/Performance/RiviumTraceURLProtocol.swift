@@ -14,7 +14,7 @@ import Foundation
 /// config.protocolClasses = [RiviumTraceURLProtocol.self] + (config.protocolClasses ?? [])
 /// let session = URLSession(configuration: config)
 /// ```
-public class RiviumTraceURLProtocol: URLProtocol {
+public final class RiviumTraceURLProtocol: URLProtocol, @unchecked Sendable {
 
     // MARK: - Properties
 
@@ -25,8 +25,8 @@ public class RiviumTraceURLProtocol: URLProtocol {
     private var startTime: Date?
     private var response: URLResponse?
 
-    private static var excludedHosts: Set<String> = ["trace.rivium.co"]
-    private static var minDurationMs: Double = 0
+    nonisolated(unsafe) private static var excludedHosts: Set<String> = ["trace.rivium.co"]
+    nonisolated(unsafe) private static var minDurationMs: Double = 0
 
     // MARK: - Configuration
 
@@ -40,10 +40,18 @@ public class RiviumTraceURLProtocol: URLProtocol {
         URLProtocol.unregisterClass(RiviumTraceURLProtocol.self)
     }
 
+    /// Configure the RiviumTrace API host to always exclude from tracking.
+    /// Call this during SDK initialization with the configured apiUrl.
+    public static func setApiUrl(_ apiUrl: String) {
+        if let host = URL(string: apiUrl)?.host {
+            excludedHosts.insert(host)
+        }
+    }
+
     /// Set hosts to exclude from tracking (e.g., third-party analytics)
     public static func setExcludedHosts(_ hosts: [String]) {
         excludedHosts = Set(hosts)
-        excludedHosts.insert("trace.rivium.co") // Always exclude RiviumTrace API
+        excludedHosts.insert("trace.rivium.co") // Always exclude default RiviumTrace API
     }
 
     /// Set minimum duration (ms) to report. Spans shorter than this are ignored.

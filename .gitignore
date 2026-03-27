@@ -62,3 +62,6 @@ Thumbs.db
 
 # Build output
 output/
+
+# Internal docs (not published)
+PUBLISH.md

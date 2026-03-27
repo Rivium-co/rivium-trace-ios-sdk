@@ -13,7 +13,7 @@ import WatchKit
 #endif
 
 /// Utility class to gather device and app information
-public class DeviceInfo {
+public class DeviceInfo: @unchecked Sendable {
 
     /// Shared instance
     public static let shared = DeviceInfo()

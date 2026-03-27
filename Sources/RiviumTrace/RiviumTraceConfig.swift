@@ -42,6 +42,9 @@ public struct RiviumTraceConfig {
     /// Sample rate for error capture (0.0 to 1.0)
     public let sampleRate: Double
 
+    /// Base URL for the RiviumTrace API. Override for self-hosted deployments.
+    public let apiUrl: String
+
     /// Initialize with all options
     public init(
         apiKey: String,
@@ -56,7 +59,8 @@ public struct RiviumTraceConfig {
         maxBreadcrumbs: Int = 20,
         httpTimeout: TimeInterval = 30,
         enableOfflineStorage: Bool = true,
-        sampleRate: Double = 1.0
+        sampleRate: Double = 1.0,
+        apiUrl: String = "https://trace.rivium.co"
     ) {
         precondition(!apiKey.isEmpty, "API key cannot be empty")
         precondition(apiKey.hasPrefix("rv_live_") || apiKey.hasPrefix("rv_test_") || apiKey.hasPrefix("nl_live_") || apiKey.hasPrefix("nl_test_"), "API key must start with rv_live_ or rv_test_")
@@ -78,6 +82,7 @@ public struct RiviumTraceConfig {
         self.httpTimeout = httpTimeout
         self.enableOfflineStorage = enableOfflineStorage
         self.sampleRate = sampleRate
+        self.apiUrl = apiUrl
     }
 
     /// Create a simple config with just API key
@@ -101,6 +106,7 @@ public class RiviumTraceConfigBuilder {
     private var httpTimeout: TimeInterval = 30
     private var enableOfflineStorage: Bool = true
     private var sampleRate: Double = 1.0
+    private var apiUrl: String = "https://trace.rivium.co"
 
     public init(apiKey: String) {
         self.apiKey = apiKey
@@ -178,6 +184,12 @@ public class RiviumTraceConfigBuilder {
         return self
     }
 
+    @discardableResult
+    public func apiUrl(_ url: String) -> RiviumTraceConfigBuilder {
+        self.apiUrl = url
+        return self
+    }
+
     public func build() -> RiviumTraceConfig {
         return RiviumTraceConfig(
             apiKey: apiKey,
@@ -192,7 +204,8 @@ public class RiviumTraceConfigBuilder {
             maxBreadcrumbs: maxBreadcrumbs,
             httpTimeout: httpTimeout,
             enableOfflineStorage: enableOfflineStorage,
-            sampleRate: sampleRate
+            sampleRate: sampleRate,
+            apiUrl: apiUrl
         )
     }
 }

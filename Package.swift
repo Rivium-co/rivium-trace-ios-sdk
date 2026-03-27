@@ -30,5 +30,5 @@ let package = Package(
             path: "Tests/RiviumTraceTests"
         ),
     ],
-    swiftLanguageVersions: [.v5]
+    swiftLanguageVersions: [.v5, .version("6")]
 )

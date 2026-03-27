@@ -2,7 +2,7 @@ import Foundation
 
 /// Service for managing breadcrumbs (trail of events leading up to an error)
 /// Thread-safe implementation using a concurrent queue
-public class BreadcrumbService {
+public class BreadcrumbService: @unchecked Sendable {
 
     /// Shared instance
     public static let shared = BreadcrumbService()

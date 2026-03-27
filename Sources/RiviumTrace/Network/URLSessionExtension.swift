@@ -1,19 +1,19 @@
 import Foundation
 
 /// URLSession extension for automatic HTTP breadcrumb tracking
-public class RiviumTraceHttpBreadcrumbProtocol: URLProtocol {
+public final class RiviumTraceHttpBreadcrumbProtocol: URLProtocol, @unchecked Sendable {
 
     private var dataTask: URLSessionDataTask?
     private var startTime: Date?
     private var receivedData: Data = Data()
 
-    private static var isEnabled = false
+    nonisolated(unsafe) private static var isEnabled = false
 
     /// Enable HTTP error capturing (4xx, 5xx responses)
-    public static var captureHttpErrors: Bool = true
+    nonisolated(unsafe) public static var captureHttpErrors: Bool = true
 
     /// Enable client error capturing (4xx responses) - only works if captureHttpErrors is true
-    public static var captureClientErrors: Bool = false
+    nonisolated(unsafe) public static var captureClientErrors: Bool = false
 
     /// Enable automatic HTTP tracking
     public static func enable() {
