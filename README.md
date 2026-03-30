@@ -28,7 +28,7 @@ Add the following to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Rivium-co/rivium-trace-ios-sdk.git", from: "0.1.0")
+    .package(url: "https://github.com/Rivium-co/rivium-trace-ios-sdk.git", from: "0.1.1")
 ]
 ```
 
@@ -58,7 +58,7 @@ github "Rivium-co/rivium-trace-ios-sdk" ~> 0.1
 
 ## Quick Start
 
-### 1. Initialize the SDK
+### Rivium Cloud (Default)
 
 In your `AppDelegate`:
 
@@ -89,6 +89,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         RiviumTrace.shared.close()
     }
 }
+```
+
+### Self-Hosted
+
+If you're running [RiviumTrace Self-Hosted](https://github.com/Rivium-co/rivium-selfhosted), just add `.apiUrl()` pointing to your server:
+
+```swift
+let config = RiviumTraceConfigBuilder(apiKey: "rv_live_your_api_key")
+    .apiUrl("http://your-server:3001")  // Your self-hosted Trace API
+    .environment("production")
+    .release(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String)
+    .build()
+
+RiviumTrace.shared.initialize(config: config)
 ```
 
 ### 2. Capture Errors
@@ -378,6 +392,7 @@ RiviumTrace.shared.close()
 | Option | Default | Description |
 |--------|---------|-------------|
 | `apiKey` | Required | Your API key from Rivium Console (`rv_live_xxx` or `rv_test_xxx`) |
+| `apiUrl` | `https://trace.rivium.co` | API URL — set for self-hosted only |
 | `environment` | `"production"` | Environment name (production, staging, etc.) |
 | `release` | nil | App version string (auto-detected if nil) |
 | `debug` | false | Enable debug logging |
@@ -402,6 +417,7 @@ struct MyApp: App {
 
     init() {
         let config = RiviumTraceConfigBuilder(apiKey: "rv_live_your_api_key")
+            // .apiUrl("http://your-server:3001")  // Uncomment for self-hosted
             .environment("production")
             .build()
         RiviumTrace.shared.initialize(config: config)
