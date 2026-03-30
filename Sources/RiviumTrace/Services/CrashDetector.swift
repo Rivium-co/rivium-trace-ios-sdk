@@ -1,5 +1,10 @@
 import Foundation
+#if canImport(UIKit)
 import UIKit
+#endif
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// Crash detection using two-file marker approach
 ///
@@ -46,6 +51,7 @@ public class CrashDetector: @unchecked Sendable {
     public func startObservingLifecycle() {
         guard !isObservingLifecycle else { return }
 
+        #if canImport(UIKit)
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(appWillResignActive),
@@ -80,6 +86,28 @@ public class CrashDetector: @unchecked Sendable {
             name: UIApplication.willTerminateNotification,
             object: nil
         )
+        #elseif canImport(AppKit)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillResignActive),
+            name: NSApplication.willResignActiveNotification,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillTerminate),
+            name: NSApplication.willTerminateNotification,
+            object: nil
+        )
+        #endif
 
         isObservingLifecycle = true
         logDebug("Started observing app lifecycle for crash detection")
