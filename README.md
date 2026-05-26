@@ -58,7 +58,7 @@ github "Rivium-co/rivium-trace-ios-sdk" ~> 0.1
 
 ## Quick Start
 
-### Rivium Cloud (Default)
+### Initialize the SDK (Default: Rivium Cloud)
 
 In your `AppDelegate`:
 
@@ -91,7 +91,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 }
 ```
 
-### Self-Hosted
+### Initialize the SDK (Advanced: Self-Hosted)
 
 If you're running [RiviumTrace Self-Hosted](https://github.com/Rivium-co/rivium-selfhosted), just add `.apiUrl()` pointing to your server:
 
