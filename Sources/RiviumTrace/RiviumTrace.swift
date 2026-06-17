@@ -95,9 +95,13 @@ public class RiviumTrace: @unchecked Sendable {
             setupUncaughtExceptionHandler()
         }
 
-        // Native crash capture (signals + Mach exceptions) is wired in
-        // NativeCrashReporter once PLCrashReporter is integrated. The
-        // captureSignalCrashes flag remains the public switch for it.
+        // Native crash capture (POSIX signals + Mach exceptions) via PLCrashReporter.
+        // Step 1: drain any crash report left by the previous session.
+        // Step 2: install handlers for this session.
+        if config.captureSignalCrashes {
+            sendPendingNativeCrashIfAny()
+            NativeCrashReporter.shared.install()
+        }
 
         // Setup ANR detection
         if config.captureAnr {
@@ -657,6 +661,20 @@ public class RiviumTrace: @unchecked Sendable {
             merged[key] = value
         }
         return merged
+    }
+
+    private func sendPendingNativeCrashIfAny() {
+        guard let cfg = config else { return }
+        guard let error = NativeCrashReporter.shared.loadPendingCrashReport(
+            environment: cfg.environment,
+            releaseVersion: cfg.release ?? DeviceInfo.shared.appVersion,
+            userAgent: userAgent
+        ) else { return }
+
+        logInfo("Sending native crash from previous session")
+        // Send synchronously so the report is delivered before any other init
+        // step risks pushing it out of the network queue.
+        _ = client?.sendErrorSync(error)
     }
 
     private func setupUncaughtExceptionHandler() {

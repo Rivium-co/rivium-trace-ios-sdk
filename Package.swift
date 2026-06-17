@@ -8,8 +8,7 @@ let package = Package(
     platforms: [
         .iOS(.v12),
         .macOS(.v10_14),
-        .tvOS(.v12),
-        .watchOS(.v5)
+        .tvOS(.v12)
     ],
     products: [
         .library(
@@ -19,9 +18,13 @@ let package = Package(
     ],
     dependencies: [],
     targets: [
+        .binaryTarget(
+            name: "CrashReporter",
+            path: "Frameworks/CrashReporter.xcframework"
+        ),
         .target(
             name: "RiviumTrace",
-            dependencies: [],
+            dependencies: ["CrashReporter"],
             path: "Sources/RiviumTrace"
         ),
         .testTarget(
