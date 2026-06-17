@@ -90,18 +90,14 @@ public class RiviumTrace: @unchecked Sendable {
         // Configure breadcrumbs
         BreadcrumbService.shared.setMaxBreadcrumbs(config.maxBreadcrumbs)
 
-        // Setup crash detection
-        setupCrashDetection()
-
         // Setup uncaught exception handler
         if config.captureUncaughtExceptions {
             setupUncaughtExceptionHandler()
         }
 
-        // Setup signal crash handlers
-        if config.captureSignalCrashes {
-            SignalCrashHandler.shared.install()
-        }
+        // Native crash capture (signals + Mach exceptions) is wired in
+        // NativeCrashReporter once PLCrashReporter is integrated. The
+        // captureSignalCrashes flag remains the public switch for it.
 
         // Setup ANR detection
         if config.captureAnr {
@@ -595,12 +591,6 @@ public class RiviumTrace: @unchecked Sendable {
         // Flush pending logs
         logService?.flush(completion: nil)
 
-        // Delete crash marker (graceful shutdown)
-        CrashDetector.shared.deleteMarker()
-
-        // Uninstall signal handlers
-        SignalCrashHandler.shared.uninstall()
-
         // Stop ANR watchdog
         ANRWatchdogService.shared.stop()
 
@@ -669,33 +659,6 @@ public class RiviumTrace: @unchecked Sendable {
         return merged
     }
 
-    private func setupCrashDetection() {
-        // Check for crash from previous session
-        if let crashInfo = CrashDetector.shared.checkForCrash() {
-            logInfo("Previous session crash detected, sending report...")
-
-            guard let cfg = config else { return }
-
-            let error = RiviumTraceError.nativeCrash(
-                crashInfo: """
-                    Session ID: \(crashInfo.sessionId ?? "unknown")
-                    Last Screen: \(crashInfo.lastScreen ?? "unknown")
-                    Crash Time: \(crashInfo.timestamp)
-                    """,
-                environment: cfg.environment,
-                releaseVersion: cfg.release ?? DeviceInfo.shared.appVersion,
-                userAgent: userAgent,
-                timeSinceCrashSeconds: crashInfo.timeSinceCrashSeconds
-            )
-
-            // Send synchronously to ensure it's sent
-            _ = client?.sendErrorSync(error)
-        }
-
-        // Create new crash marker for this session
-        CrashDetector.shared.createMarker(sessionId: sessionId)
-    }
-
     private func setupUncaughtExceptionHandler() {
         NSSetUncaughtExceptionHandler { exception in
             RiviumTrace.shared.handleUncaughtException(exception)
@@ -759,19 +722,13 @@ public class RiviumTrace: @unchecked Sendable {
 
     @objc private func appDidEnterBackground() {
         BreadcrumbService.shared.addSystem("App entered background")
-        // Mark clean exit when going to background
-        CrashDetector.shared.markCleanExit()
     }
 
     @objc private func appWillEnterForeground() {
         BreadcrumbService.shared.addSystem("App entered foreground")
-        // Clear clean exit marker when returning to foreground
-        CrashDetector.shared.clearCleanExit()
     }
 
     @objc private func appWillTerminate() {
-        // Mark clean exit before termination
-        CrashDetector.shared.markCleanExit()
         close()
     }
 }
