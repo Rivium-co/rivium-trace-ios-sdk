@@ -5,6 +5,11 @@ import Foundation
 public struct RiviumTraceError {
     public let message: String
     public let stackTrace: String?
+    /// Optional pre-resolved, structured stack trace. When set, the dashboard
+    /// renders this as Sentry-style frames instead of the plain-text
+    /// [stackTrace]. Native crashes populate this with a parsed PLCrashReport
+    /// JSON; plain Swift errors leave it nil.
+    public let resolvedStackTrace: String?
     public let platform: String
     public let environment: String
     public let releaseVersion: String?
@@ -19,6 +24,7 @@ public struct RiviumTraceError {
     public init(
         message: String,
         stackTrace: String? = nil,
+        resolvedStackTrace: String? = nil,
         platform: String = "ios",
         environment: String = "production",
         releaseVersion: String? = nil,
@@ -32,6 +38,7 @@ public struct RiviumTraceError {
     ) {
         self.message = message
         self.stackTrace = stackTrace
+        self.resolvedStackTrace = resolvedStackTrace
         self.platform = platform
         self.environment = environment
         self.releaseVersion = releaseVersion
@@ -60,6 +67,9 @@ public struct RiviumTraceError {
 
         if let stackTrace = stackTrace {
             dict["stack_trace"] = stackTrace
+        }
+        if let resolvedStackTrace = resolvedStackTrace {
+            dict["resolved_stack_trace"] = resolvedStackTrace
         }
         if let releaseVersion = releaseVersion {
             dict["release_version"] = releaseVersion

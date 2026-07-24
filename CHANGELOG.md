@@ -2,7 +2,25 @@
 
 All notable changes to the RiviumTrace iOS SDK will be documented in this file.
 
-## [2.0.0] - 2026-06-17
+## [0.2.0] - 2026-07-24
+
+### Added
+- Native crashes are now posted as a **Sentry-shape structured event** in the
+  new `resolved_stack_trace` field. `NativeCrashReporter` maps the parsed
+  `PLCrashReport` into the same JSON schema the Android SDK emits, so the
+  RiviumTrace dashboard renders iOS and Android native crashes with an
+  identical frame-by-frame view (signal metadata, thread selector with the
+  crashing thread flagged, register dump, per-frame image path + instruction
+  address, `debug_meta.images` with UUIDs suitable for dSYM symbolication).
+- Debuggerd/Apple-style text trace is still populated in the `stack_trace`
+  field as a fallback for older consumers.
+- `RiviumTraceError.resolvedStackTrace: String?` field on the public model,
+  serialized as `resolved_stack_trace`. Non-native errors leave it `nil`.
+
+### Fixed
+- Signal name is no longer double-prefixed. `PLCrashReport.signalInfo.name`
+  already returns `"SIGSEGV"`, so the previous code produced `"SIGSIGSEGV"`
+  in the crash title. Names starting with `SIG` are now passed through as-is.
 
 ### Breaking changes
 - **Native crash capture is now backed by PLCrashReporter 1.12.0 (MIT, vendored).**

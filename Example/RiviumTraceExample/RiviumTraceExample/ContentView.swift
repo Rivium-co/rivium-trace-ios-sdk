@@ -102,6 +102,25 @@ struct ContentView: View {
                         sampleRateDemo()
                     }
 
+                    // Native Crash Tests — kill the app with real POSIX signals
+                    // so PLCrashReporter writes a report to disk. On next launch
+                    // the SDK drains it and posts the Sentry-shape event.
+                    // These must be exercised outside the Xcode debugger; LLDB
+                    // intercepts signals before PLCrashReporter can see them.
+                    SectionHeader(title: "Native Crash Tests (kills app)")
+
+                    DemoButton(title: "Native Crash (SIGSEGV)", color: .red) {
+                        triggerNativeCrash(kind: "signal")
+                    }
+
+                    DemoButton(title: "Native Crash (abort)", color: .red) {
+                        triggerNativeCrash(kind: "abort")
+                    }
+
+                    DemoButton(title: "ANR (block main 25s)", color: .orange) {
+                        triggerNativeCrash(kind: "anr")
+                    }
+
                     // Status message
                     if !statusMessage.isEmpty {
                         Text(statusMessage)
@@ -515,6 +534,36 @@ struct ContentView: View {
 
             DispatchQueue.main.async {
                 statusMessage = "Sample rate: \(sentCount)/\(totalErrors) errors sent (rate: 1.0)"
+            }
+        }
+    }
+
+    // MARK: - Native crash triggers
+    //
+    // Real POSIX signals so PLCrashReporter records a report to disk. The
+    // report is drained + POSTed on the next launch. Nothing to do app-side
+    // beyond relaunching after the crash. Must be tested with the app
+    // detached from LLDB (release build or after `flutter run` disconnect),
+    // otherwise the debugger intercepts signals first.
+    private func triggerNativeCrash(kind: String) {
+        RiviumTrace.shared.addBreadcrumb(
+            "User triggered native crash (\(kind))",
+            type: .info
+        )
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            switch kind {
+            case "abort":
+                abort()
+            case "anr":
+                // iOS watchdog kills apps that block the main thread for ~20s.
+                Thread.sleep(forTimeInterval: 25)
+            default:
+                // SIGSEGV via null-region raw pointer store. Swift's
+                // UnsafeMutablePointer.init(bitPattern:) traps at address 0
+                // via a Swift-runtime check, so we cast a raw pointer at
+                // 0x1 (also invalid) and let the CPU fault.
+                let raw = UnsafeMutableRawPointer(bitPattern: 0x1)!
+                raw.storeBytes(of: Int(42), as: Int.self)
             }
         }
     }
