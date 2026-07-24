@@ -8,7 +8,7 @@ Pod::Spec.new do |s|
     breadcrumb tracking, logging, ANR detection, and APM support.
   DESC
 
-  s.homepage         = 'https://github.com/rivium-trace/rivium-trace-ios-sdk'
+  s.homepage         = 'https://github.com/Rivium-co/rivium-trace-ios-sdk'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'RiviumTrace' => 'support@rivium.co' }
   s.source           = { :git => 'https://github.com/Rivium-co/rivium-trace-ios-sdk.git', :tag => s.version.to_s }
