@@ -2,7 +2,7 @@ import Foundation
 
 /// Configuration for RiviumTrace SDK
 public struct RiviumTraceConfig {
-    /// API Key from Rivium Console (rv_live_xxx or rv_test_xxx)
+    /// API Key from Rivium Console (rv_live_xxx)
     public let apiKey: String
 
     /// Environment name (e.g., "production", "staging", "development")
@@ -63,7 +63,7 @@ public struct RiviumTraceConfig {
         apiUrl: String = "https://trace.rivium.co"
     ) {
         precondition(!apiKey.isEmpty, "API key cannot be empty")
-        precondition(apiKey.hasPrefix("rv_live_") || apiKey.hasPrefix("rv_test_") || apiKey.hasPrefix("nl_live_") || apiKey.hasPrefix("nl_test_"), "API key must start with rv_live_ or rv_test_")
+        precondition(apiKey.hasPrefix("rv_live_"), "API key must start with rv_live_")
         precondition(maxBreadcrumbs > 0, "maxBreadcrumbs must be positive")
         precondition(httpTimeout > 0, "httpTimeout must be positive")
         precondition(sampleRate >= 0 && sampleRate <= 1, "sampleRate must be between 0.0 and 1.0")

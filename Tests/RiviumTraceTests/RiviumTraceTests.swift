@@ -8,9 +8,9 @@ final class RiviumTraceConfigTests: XCTestCase {
     // MARK: Default Values
 
     func testConfigDefaultValues() {
-        let config = RiviumTraceConfig(apiKey: "rv_test_abc123")
+        let config = RiviumTraceConfig(apiKey: "rv_live_abc123")
 
-        XCTAssertEqual(config.apiKey, "rv_test_abc123")
+        XCTAssertEqual(config.apiKey, "rv_live_abc123")
         XCTAssertEqual(config.environment, "production")
         XCTAssertNil(config.release)
         XCTAssertFalse(config.debug)
@@ -64,27 +64,12 @@ final class RiviumTraceConfigTests: XCTestCase {
         XCTAssertEqual(config.apiKey, "rv_live_key123")
     }
 
-    func testConfigAcceptsRvTestPrefix() {
-        let config = RiviumTraceConfig(apiKey: "rv_test_key123")
-        XCTAssertEqual(config.apiKey, "rv_test_key123")
-    }
-
-    func testConfigAcceptsNlLivePrefix() {
-        let config = RiviumTraceConfig(apiKey: "nl_live_key123")
-        XCTAssertEqual(config.apiKey, "nl_live_key123")
-    }
-
-    func testConfigAcceptsNlTestPrefix() {
-        let config = RiviumTraceConfig(apiKey: "nl_test_key123")
-        XCTAssertEqual(config.apiKey, "nl_test_key123")
-    }
-
     // MARK: Simple Factory
 
     func testSimpleConfigFactory() {
-        let config = RiviumTraceConfig.simple(apiKey: "rv_test_simple")
+        let config = RiviumTraceConfig.simple(apiKey: "rv_live_simple")
 
-        XCTAssertEqual(config.apiKey, "rv_test_simple")
+        XCTAssertEqual(config.apiKey, "rv_live_simple")
         XCTAssertEqual(config.environment, "production")
         XCTAssertNil(config.release)
         XCTAssertFalse(config.debug)
@@ -102,42 +87,42 @@ final class RiviumTraceConfigTests: XCTestCase {
     // MARK: Boundary Values
 
     func testConfigSampleRateZero() {
-        let config = RiviumTraceConfig(apiKey: "rv_test_abc", sampleRate: 0.0)
+        let config = RiviumTraceConfig(apiKey: "rv_live_abc", sampleRate: 0.0)
         XCTAssertEqual(config.sampleRate, 0.0)
     }
 
     func testConfigSampleRateOne() {
-        let config = RiviumTraceConfig(apiKey: "rv_test_abc", sampleRate: 1.0)
+        let config = RiviumTraceConfig(apiKey: "rv_live_abc", sampleRate: 1.0)
         XCTAssertEqual(config.sampleRate, 1.0)
     }
 
     func testConfigSampleRateMidRange() {
-        let config = RiviumTraceConfig(apiKey: "rv_test_abc", sampleRate: 0.75)
+        let config = RiviumTraceConfig(apiKey: "rv_live_abc", sampleRate: 0.75)
         XCTAssertEqual(config.sampleRate, 0.75)
     }
 
     func testConfigMaxBreadcrumbsMinimum() {
-        let config = RiviumTraceConfig(apiKey: "rv_test_abc", maxBreadcrumbs: 1)
+        let config = RiviumTraceConfig(apiKey: "rv_live_abc", maxBreadcrumbs: 1)
         XCTAssertEqual(config.maxBreadcrumbs, 1)
     }
 
     func testConfigHttpTimeoutMinimum() {
-        let config = RiviumTraceConfig(apiKey: "rv_test_abc", httpTimeout: 0.001)
+        let config = RiviumTraceConfig(apiKey: "rv_live_abc", httpTimeout: 0.001)
         XCTAssertEqual(config.httpTimeout, 0.001, accuracy: 0.0001)
     }
 
     func testConfigAnrTimeoutMsMinimum() {
-        let config = RiviumTraceConfig(apiKey: "rv_test_abc", anrTimeoutMs: 1)
+        let config = RiviumTraceConfig(apiKey: "rv_live_abc", anrTimeoutMs: 1)
         XCTAssertEqual(config.anrTimeoutMs, 1)
     }
 
     func testConfigReleaseNilByDefault() {
-        let config = RiviumTraceConfig(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfig(apiKey: "rv_live_abc")
         XCTAssertNil(config.release)
     }
 
     func testConfigReleaseCanBeSet() {
-        let config = RiviumTraceConfig(apiKey: "rv_test_abc", release: "3.2.1")
+        let config = RiviumTraceConfig(apiKey: "rv_live_abc", release: "3.2.1")
         XCTAssertEqual(config.release, "3.2.1")
     }
 }
@@ -147,10 +132,10 @@ final class RiviumTraceConfigTests: XCTestCase {
 final class RiviumTraceConfigBuilderTests: XCTestCase {
 
     func testBuilderDefaults() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_builder")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_builder")
             .build()
 
-        XCTAssertEqual(config.apiKey, "rv_test_builder")
+        XCTAssertEqual(config.apiKey, "rv_live_builder")
         XCTAssertEqual(config.environment, "production")
         XCTAssertNil(config.release)
         XCTAssertFalse(config.debug)
@@ -166,98 +151,98 @@ final class RiviumTraceConfigBuilderTests: XCTestCase {
     }
 
     func testBuilderEnvironment() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .environment("staging")
             .build()
         XCTAssertEqual(config.environment, "staging")
     }
 
     func testBuilderRelease() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .release("1.2.3")
             .build()
         XCTAssertEqual(config.release, "1.2.3")
     }
 
     func testBuilderReleaseNil() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .release(nil)
             .build()
         XCTAssertNil(config.release)
     }
 
     func testBuilderDebug() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .debug(true)
             .build()
         XCTAssertTrue(config.debug)
     }
 
     func testBuilderEnabled() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .enabled(false)
             .build()
         XCTAssertFalse(config.enabled)
     }
 
     func testBuilderCaptureUncaughtExceptions() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .captureUncaughtExceptions(false)
             .build()
         XCTAssertFalse(config.captureUncaughtExceptions)
     }
 
     func testBuilderCaptureSignalCrashes() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .captureSignalCrashes(false)
             .build()
         XCTAssertFalse(config.captureSignalCrashes)
     }
 
     func testBuilderCaptureAnr() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .captureAnr(false)
             .build()
         XCTAssertFalse(config.captureAnr)
     }
 
     func testBuilderAnrTimeoutMs() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .anrTimeoutMs(10000)
             .build()
         XCTAssertEqual(config.anrTimeoutMs, 10000)
     }
 
     func testBuilderMaxBreadcrumbs() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .maxBreadcrumbs(50)
             .build()
         XCTAssertEqual(config.maxBreadcrumbs, 50)
     }
 
     func testBuilderHttpTimeout() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .httpTimeout(120)
             .build()
         XCTAssertEqual(config.httpTimeout, 120)
     }
 
     func testBuilderEnableOfflineStorage() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .enableOfflineStorage(false)
             .build()
         XCTAssertFalse(config.enableOfflineStorage)
     }
 
     func testBuilderSampleRate() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .sampleRate(0.25)
             .build()
         XCTAssertEqual(config.sampleRate, 0.25)
     }
 
     func testBuilderFullChain() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_chain")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_chain")
             .environment("development")
             .release("5.0.0")
             .debug(true)
@@ -272,7 +257,7 @@ final class RiviumTraceConfigBuilderTests: XCTestCase {
             .sampleRate(0.1)
             .build()
 
-        XCTAssertEqual(config.apiKey, "rv_test_chain")
+        XCTAssertEqual(config.apiKey, "rv_live_chain")
         XCTAssertEqual(config.environment, "development")
         XCTAssertEqual(config.release, "5.0.0")
         XCTAssertTrue(config.debug)
@@ -288,7 +273,7 @@ final class RiviumTraceConfigBuilderTests: XCTestCase {
     }
 
     func testBuilderOverwritesValues() {
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_test_abc")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_abc")
             .environment("staging")
             .environment("production")
             .build()
