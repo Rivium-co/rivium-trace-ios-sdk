@@ -40,7 +40,7 @@ public class RiviumTraceClient: @unchecked Sendable {
     public func sendError(_ error: RiviumTraceError, completion: ((Result<Void, Error>) -> Void)? = nil) {
         let url = "\(baseURL)/api/errors"
 
-        post(url: url, body: error.toDictionary()) { result in
+        post(url: url, body: Self.payload(for: error)) { result in
             switch result {
             case .success:
                 logDebug("Error sent successfully")
@@ -59,7 +59,7 @@ public class RiviumTraceClient: @unchecked Sendable {
         let semaphore = DispatchSemaphore(value: 0)
         var success = false
 
-        post(url: url, body: error.toDictionary()) { result in
+        post(url: url, body: Self.payload(for: error)) { result in
             if case .success = result {
                 success = true
             }
@@ -74,7 +74,7 @@ public class RiviumTraceClient: @unchecked Sendable {
     public func sendMessage(_ message: RiviumTraceError, completion: ((Result<Void, Error>) -> Void)? = nil) {
         let url = "\(baseURL)/api/messages"
 
-        post(url: url, body: message.toDictionary()) { result in
+        post(url: url, body: Self.payload(for: message)) { result in
             switch result {
             case .success:
                 logDebug("Message sent successfully")
@@ -84,6 +84,33 @@ public class RiviumTraceClient: @unchecked Sendable {
                 completion?(.failure(error))
             }
         }
+    }
+
+    // MARK: - Error context
+
+    /// The JSON body for an error or message: `toDictionary()` plus the device,
+    /// app and SDK context every event carries, whatever path built it
+    /// (captureError, captureMessage, uncaught exception, native crash, ANR).
+    /// Values the caller already put in `extra` win.
+    static func payload(for error: RiviumTraceError) -> [String: Any] {
+        var dict = error.toDictionary()
+        var extra = dict["extra"] as? [String: Any] ?? [:]
+
+        if extra["device_info"] == nil {
+            extra["device_info"] = DeviceInfo.shared.deviceInfo
+        }
+        if extra["app_info"] == nil {
+            let app = DeviceInfo.shared.appInfoDictionary
+            if !app.isEmpty { extra["app_info"] = app }
+        }
+        var sdk = extra["_sdk"] as? [String: Any] ?? [:]
+        if sdk["sdk_version"] == nil {
+            sdk["sdk_version"] = RiviumTraceSDK.version
+        }
+        extra["_sdk"] = sdk
+
+        dict["extra"] = extra
+        return dict
     }
 
     // MARK: - Performance Monitoring

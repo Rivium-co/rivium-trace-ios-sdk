@@ -1888,20 +1888,86 @@ final class DeviceInfoTests: XCTestCase {
         let info = DeviceInfo.shared.deviceInfo
 
         XCTAssertNotNil(info["device_model"])
+        XCTAssertEqual(info["device_manufacturer"] as? String, "Apple")
+        XCTAssertNotNil(info["os_name"])
         XCTAssertNotNil(info["os_version"])
-        XCTAssertNotNil(info["platform"])
         XCTAssertNotNil(info["locale"])
         XCTAssertNotNil(info["timezone"])
+        XCTAssertNotNil(info["is_simulator"] as? Bool)
+        XCTAssertGreaterThan((info["memory_total_bytes"] as? UInt64) ?? 0, 0)
     }
 
     func testDeviceInfoDictionaryValuesAreNotEmpty() {
         let info = DeviceInfo.shared.deviceInfo
 
         XCTAssertFalse((info["device_model"] as? String)?.isEmpty ?? true)
+        XCTAssertFalse((info["os_name"] as? String)?.isEmpty ?? true)
         XCTAssertFalse((info["os_version"] as? String)?.isEmpty ?? true)
-        XCTAssertFalse((info["platform"] as? String)?.isEmpty ?? true)
         XCTAssertFalse((info["locale"] as? String)?.isEmpty ?? true)
         XCTAssertFalse((info["timezone"] as? String)?.isEmpty ?? true)
+    }
+
+    func testDeviceInfoLeavesOutPersonalIdentifiers() {
+        let info = DeviceInfo.shared.deviceInfo
+
+        XCTAssertNil(info["device_name"], "UIDevice.name is personal and must not be sent")
+        XCTAssertNil(info["identifier_for_vendor"])
+        XCTAssertNil(info["device_id"])
+        XCTAssertNil(info["ip"])
+    }
+
+    func testDeviceInfoIsCached() {
+        let a = DeviceInfo.shared.deviceInfo
+        let b = DeviceInfo.shared.deviceInfo
+        XCTAssertEqual(NSDictionary(dictionary: a), NSDictionary(dictionary: b))
+    }
+
+    func testAppInfoUsesDocumentedKeys() {
+        let allowed: Set<String> = ["version", "build_number", "package_name", "app_name"]
+        let keys = Set(DeviceInfo.shared.appInfoDictionary.keys)
+        XCTAssertTrue(keys.isSubset(of: allowed), "unexpected app_info keys: \(keys.subtracting(allowed))")
+    }
+
+    func testPayloadAddsDeviceAppAndSdkContext() {
+        let error = RiviumTraceError(message: "boom", extra: ["custom": "value"])
+        let body = RiviumTraceClient.payload(for: error)
+        let extra = body["extra"] as? [String: Any]
+
+        XCTAssertEqual(extra?["custom"] as? String, "value")
+        XCTAssertNotNil(extra?["device_info"] as? [String: Any])
+        let sdk = extra?["_sdk"] as? [String: Any]
+        XCTAssertEqual(sdk?["sdk_version"] as? String, RiviumTraceSDK.version)
+        if !DeviceInfo.shared.appInfoDictionary.isEmpty {
+            XCTAssertNotNil(extra?["app_info"] as? [String: Any])
+        }
+    }
+
+    func testPayloadCoversNativeCrashAndAnr() {
+        let crash = RiviumTraceClient.payload(for: .nativeCrash(crashInfo: "x"))
+        let anr = RiviumTraceClient.payload(for: .anr(stackTrace: "s", anrDurationMs: 5000))
+
+        XCTAssertNotNil((crash["extra"] as? [String: Any])?["device_info"])
+        XCTAssertNotNil((anr["extra"] as? [String: Any])?["device_info"])
+    }
+
+    func testPayloadKeepsCallerSuppliedContext() {
+        let error = RiviumTraceError(
+            message: "boom",
+            extra: ["device_info": ["device_model": "Custom"], "_sdk": ["sdk_version": "9.9.9", "x": 1]]
+        )
+        let extra = RiviumTraceClient.payload(for: error)["extra"] as? [String: Any]
+
+        XCTAssertEqual((extra?["device_info"] as? [String: Any])?["device_model"] as? String, "Custom")
+        XCTAssertEqual((extra?["_sdk"] as? [String: Any])?["sdk_version"] as? String, "9.9.9")
+        XCTAssertEqual((extra?["_sdk"] as? [String: Any])?["x"] as? Int, 1)
+    }
+
+    func testSdkVersionMatchesPodspec() throws {
+        let podspec = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("RiviumTrace.podspec")
+        let text = try String(contentsOf: podspec, encoding: .utf8)
+        XCTAssertTrue(text.contains("s.version          = '\(RiviumTraceSDK.version)'"))
     }
 
     func testDeviceIdentifierIsNotEmpty() {

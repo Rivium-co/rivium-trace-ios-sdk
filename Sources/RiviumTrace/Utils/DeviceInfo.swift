@@ -97,29 +97,68 @@ public class DeviceInfo: @unchecked Sendable {
         #endif
     }
 
-    /// Get device information as a dictionary
+    // MARK: - Error context (device_info / app_info)
+
+    private let contextLock = NSLock()
+    private var cachedDeviceInfo: [String: Any]?
+    private var cachedAppInfo: [String: Any]?
+
+    /// Device facts attached to every error and message as `extra.device_info`.
+    ///
+    /// Key names match the Android SDK where they apply (`device_model`,
+    /// `device_manufacturer`, `os_version`, `locale`, `timezone`) so the
+    /// dashboard reads both platforms the same way. Collected once and cached.
+    ///
+    /// Privacy: no device name (`UIDevice.name` is usually the owner's name),
+    /// no identifierForVendor, no IP address.
     public var deviceInfo: [String: Any] {
+        contextLock.lock()
+        defer { contextLock.unlock() }
+        if let cached = cachedDeviceInfo { return cached }
+
         var info: [String: Any] = [
             "device_model": deviceModel,
+            "device_manufacturer": "Apple",
+            "os_name": osName,
             "os_version": osVersion,
-            "platform": platform,
             "locale": Locale.current.identifier,
-            "timezone": TimeZone.current.identifier
+            "timezone": TimeZone.current.identifier,
+            "is_simulator": isSimulator,
+            "memory_total_bytes": ProcessInfo.processInfo.physicalMemory
         ]
-
         #if os(iOS)
-        info["device_name"] = UIDevice.current.name
-        info["system_name"] = UIDevice.current.systemName
-        info["system_version"] = UIDevice.current.systemVersion
         info["device_type"] = UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
         #endif
 
-        #if os(macOS)
-        info["device_name"] = Host.current().localizedName ?? "Mac"
-        info["system_name"] = "macOS"
-        #endif
-
+        cachedDeviceInfo = info
         return info
+    }
+
+    /// App facts attached to every error and message as `extra.app_info`.
+    /// Collected once and cached; keys with no value in Info.plist are left out.
+    public var appInfoDictionary: [String: Any] {
+        contextLock.lock()
+        defer { contextLock.unlock() }
+        if let cached = cachedAppInfo { return cached }
+
+        let app = appInfo
+        var info: [String: Any] = [:]
+        if let version = app.version { info["version"] = version }
+        if let build = app.build { info["build_number"] = build }
+        if let bundleId = Bundle.main.bundleIdentifier { info["package_name"] = bundleId }
+        if let name = app.name { info["app_name"] = name }
+
+        cachedAppInfo = info
+        return info
+    }
+
+    /// OS name: "iOS" / "iPadOS" (UIDevice.systemName), "macOS", "tvOS".
+    public var osName: String {
+        #if os(iOS) || os(tvOS)
+        return UIDevice.current.systemName
+        #else
+        return platform
+        #endif
     }
 
     /// Get a pseudo-unique device identifier (hashed for privacy)

@@ -28,7 +28,7 @@ Add the following to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Rivium-co/rivium-trace-ios-sdk.git", from: "0.2.0")
+    .package(url: "https://github.com/Rivium-co/rivium-trace-ios-sdk.git", from: "0.2.1")
 ]
 ```
 
@@ -39,7 +39,7 @@ Or in Xcode: **File → Add Packages** → Enter the repository URL.
 Add to your `Podfile`:
 
 ```ruby
-pod 'RiviumTrace', '~> 0.1'
+pod 'RiviumTrace', '~> 0.2'
 ```
 
 Then run:
@@ -53,7 +53,7 @@ pod install
 Add to your `Cartfile`:
 
 ```
-github "Rivium-co/rivium-trace-ios-sdk" ~> 0.1
+github "Rivium-co/rivium-trace-ios-sdk" ~> 0.2
 ```
 
 ## Quick Start
@@ -174,6 +174,27 @@ RiviumTrace.shared.setTag("build_type", value: "release")
 ```
 
 ## Context & Tags
+
+### Automatic Device & App Context
+
+Every error, message, native crash and ANR report carries this context in its
+extra data, collected once at startup:
+
+| Key | Contents |
+|-----|----------|
+| `device_info.device_model` | Hardware identifier, e.g. `iPhone17,2` |
+| `device_info.device_manufacturer` | `Apple` |
+| `device_info.device_type` | `iPhone` or `iPad` (iOS only) |
+| `device_info.os_name` / `os_version` | e.g. `iOS` / `18.2.0` |
+| `device_info.locale` / `timezone` | e.g. `en_US` / `Europe/Berlin` |
+| `device_info.is_simulator` | `true` on the Simulator |
+| `device_info.memory_total_bytes` | Physical memory |
+| `app_info.version` / `build_number` | `CFBundleShortVersionString` / `CFBundleVersion` |
+| `app_info.package_name` / `app_name` | Bundle identifier / display name |
+| `_sdk.sdk_version` | RiviumTrace SDK version |
+
+The SDK never sends the device name (it usually contains the owner's name),
+the identifier for vendor, or an IP address.
 
 ### Global Extra Context
 

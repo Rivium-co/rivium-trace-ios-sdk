@@ -2,6 +2,14 @@
 
 All notable changes to the RiviumTrace iOS SDK will be documented in this file.
 
+## [0.2.1] - 2026-09-28
+
+### Added
+- Every error, message, crash and ANR includes device and app details (model, OS, locale, time zone, memory, app version and bundle id) and the SDK version.
+
+### Removed
+- The device name is no longer sent (it is often the owner's name).
+
 ## [0.2.0] - 2026-07-24
 
 ### Added

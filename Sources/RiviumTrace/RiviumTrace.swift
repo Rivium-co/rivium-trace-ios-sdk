@@ -72,6 +72,10 @@ public class RiviumTrace: @unchecked Sendable {
         self.config = config
         self.client = RiviumTraceClient(config: config)
         self.userAgent = DeviceInfo.shared.userAgent
+        // Collect device/app context once, up front (initialize usually runs on
+        // the main thread, where UIDevice is safest to read).
+        _ = DeviceInfo.shared.deviceInfo
+        _ = DeviceInfo.shared.appInfoDictionary
 
         // Ensure the configured API host is never tracked as a performance span
         RiviumTraceURLProtocol.setApiUrl(config.apiUrl)
@@ -648,7 +652,8 @@ public class RiviumTrace: @unchecked Sendable {
         var merged = extraContext
         merged["user_id"] = userId
         merged["session_id"] = sessionId
-        merged["device_info"] = DeviceInfo.shared.deviceInfo
+        // device_info / app_info / _sdk are added to every payload by
+        // RiviumTraceClient.payload(for:), so crash and ANR reports carry them too.
         for (key, value) in extra {
             merged[key] = value
         }
