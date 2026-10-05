@@ -69,14 +69,12 @@ final class NativeCrashReporter: PendingCrashReportSource, @unchecked Sendable {
 
         do {
             let data = try reporter.loadPendingCrashReportDataAndReturnError()
-            let report = try PLCrashReport(data: data)
-            let error = mapReportToError(
-                report,
+            return try pendingReport(
+                from: data,
                 environment: environment,
                 releaseVersion: releaseVersion,
                 userAgent: userAgent
             )
-            return PendingCrashReport(id: PendingCrashReport.identifier(for: data), error: error)
         } catch {
             logError("Failed to load pending crash report: \(error.localizedDescription)")
             try? reporter.purgePendingCrashReportAndReturnError()
@@ -110,8 +108,35 @@ final class NativeCrashReporter: PendingCrashReportSource, @unchecked Sendable {
     #endif
 
     #if canImport(CrashReporter)
+    /// Parse a raw report and map it to the event to send. The same data
+    /// gives the same event id every time.
+    func pendingReport(
+        from data: Data,
+        environment: String,
+        releaseVersion: String?,
+        userAgent: String?
+    ) throws -> PendingCrashReport {
+        let report = try PLCrashReport(data: data)
+        let error = mapReportToError(
+            report,
+            eventId: PendingCrashReport.eventId(reportUUID: Self.reportUUID(of: report), data: data),
+            environment: environment,
+            releaseVersion: releaseVersion,
+            userAgent: userAgent
+        )
+        return PendingCrashReport(id: PendingCrashReport.identifier(for: data), error: error)
+    }
+
+    /// The id PLCrashReporter wrote into the report at crash time, or `nil`
+    /// for a report without one (report format before 1.2).
+    static func reportUUID(of report: PLCrashReport) -> String? {
+        guard let uuidRef = report.uuidRef else { return nil }
+        return CFUUIDCreateString(nil, uuidRef) as String?
+    }
+
     private func mapReportToError(
         _ report: PLCrashReport,
+        eventId: String,
         environment: String,
         releaseVersion: String?,
         userAgent: String?
@@ -158,7 +183,8 @@ final class NativeCrashReporter: PendingCrashReportSource, @unchecked Sendable {
             timestamp: Int64((report.systemInfo?.timestamp?.timeIntervalSince1970 ?? Date().timeIntervalSince1970) * 1000),
             userAgent: userAgent,
             extra: extra,
-            level: MessageLevel.fatal.rawValue
+            level: MessageLevel.fatal.rawValue,
+            eventId: eventId
         )
     }
 

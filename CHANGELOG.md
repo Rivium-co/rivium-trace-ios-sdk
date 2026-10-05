@@ -2,6 +2,11 @@
 
 All notable changes to the RiviumTrace iOS SDK will be documented in this file.
 
+## [0.2.4] - 2026-10-05
+
+### Added
+- Every error, crash and ANR report now carries an event id that stays the same when the report is sent again (a stored offline copy, or a crash report retried on a later launch), so a report the server already received is counted once.
+
 ## [0.2.3] - 2026-10-05
 
 ### Fixed

@@ -93,7 +93,11 @@ public class RiviumTraceClient: @unchecked Sendable {
     public func sendMessage(_ message: RiviumTraceError, completion: ((Result<Void, Error>) -> Void)? = nil) {
         let url = "\(baseURL)/api/messages"
 
-        post(url: url, body: Self.payload(for: message)) { result in
+        // The event id belongs to error reports; a message is sent as before.
+        var body = Self.payload(for: message)
+        body.removeValue(forKey: "event_id")
+
+        post(url: url, body: body) { result in
             switch result {
             case .success:
                 logDebug("Message sent successfully")

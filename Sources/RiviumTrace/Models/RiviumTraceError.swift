@@ -20,6 +20,10 @@ public struct RiviumTraceError {
     public let level: String
     public let tags: [String: String]
     public let url: String?
+    /// Identifies this one event. A report that is sent again (for example a
+    /// stored copy on a later launch) keeps its id, so the server counts it
+    /// once. Sent as `event_id` with every error.
+    public let eventId: String
 
     public init(
         message: String,
@@ -34,7 +38,8 @@ public struct RiviumTraceError {
         extra: [String: Any] = [:],
         level: String = MessageLevel.error.rawValue,
         tags: [String: String] = [:],
-        url: String? = nil
+        url: String? = nil,
+        eventId: String = RiviumTraceError.newEventId()
     ) {
         self.message = message
         self.stackTrace = stackTrace
@@ -49,6 +54,30 @@ public struct RiviumTraceError {
         self.level = level
         self.tags = tags
         self.url = url
+        // The server only accepts ids of this shape; anything else is
+        // replaced so the event is never refused because of its id.
+        self.eventId = RiviumTraceError.isValidEventId(eventId) ? eventId : RiviumTraceError.newEventId()
+    }
+
+    /// A new random event id (a lowercase UUID).
+    public static func newEventId() -> String {
+        return UUID().uuidString.lowercased()
+    }
+
+    /// True for an id the server accepts: 8 to 64 characters out of
+    /// `A-Z a-z 0-9 _ -`.
+    public static func isValidEventId(_ id: String) -> Bool {
+        let scalars = id.unicodeScalars
+        guard (8...64).contains(scalars.count) else { return false }
+        for scalar in scalars {
+            switch scalar {
+            case "A"..."Z", "a"..."z", "0"..."9", "_", "-":
+                continue
+            default:
+                return false
+            }
+        }
+        return true
     }
 
     /// Convert to dictionary for JSON serialization
@@ -62,7 +91,8 @@ public struct RiviumTraceError {
             "level": level,
             "tags": tags,
             "breadcrumbs": breadcrumbs,
-            "extra": extra
+            "extra": extra,
+            "event_id": eventId
         ]
 
         if let stackTrace = stackTrace {

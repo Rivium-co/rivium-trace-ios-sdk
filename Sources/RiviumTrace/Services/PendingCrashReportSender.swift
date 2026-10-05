@@ -1,4 +1,5 @@
 import Foundation
+import CommonCrypto
 
 /// A crash report left on disk by a previous session, ready to send.
 struct PendingCrashReport {
@@ -16,6 +17,27 @@ struct PendingCrashReport {
             }
         }
         return String(format: "%016llx-%d", hash, data.count)
+    }
+
+    /// The event id of a crash report: the same on every launch and every
+    /// send attempt for one report, different for another crash.
+    ///
+    /// - Parameters:
+    ///   - reportUUID: The id the crash reporter wrote into the report when
+    ///     the crash happened, if the report has one.
+    ///   - data: The raw report as read from disk; used when there is no
+    ///     report id.
+    static func eventId(reportUUID: String?, data: Data) -> String {
+        if let uuid = reportUUID?.lowercased(), RiviumTraceError.isValidEventId(uuid) {
+            return uuid
+        }
+        // No usable id in the report: SHA-256 of the report itself, cut to
+        // 128 bits. The file does not change between launches.
+        var digest = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+        data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
+            _ = CC_SHA256(bytes.baseAddress, CC_LONG(bytes.count), &digest)
+        }
+        return digest.prefix(16).map { String(format: "%02x", $0) }.joined()
     }
 }
 
@@ -67,7 +89,9 @@ enum PendingCrashReportOutcome: Equatable {
 /// when the app crashes again is replaced by the new one.
 ///
 /// A report can be delivered twice only when the process dies after the
-/// server accepted it and before that answer was recorded on disk.
+/// server accepted it and before that answer was recorded on disk. Both
+/// deliveries then carry the same event id (see `eventId(reportUUID:data:)`),
+/// so the server counts the crash once.
 final class PendingCrashReportSender: @unchecked Sendable {
 
     private let source: PendingCrashReportSource
