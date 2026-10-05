@@ -107,6 +107,12 @@ public class RiviumTrace: @unchecked Sendable {
             NativeCrashReporter.shared.install()
         }
 
+        // Retry errors that could not be sent earlier because the device was
+        // offline. Runs in the background.
+        if config.enableOfflineStorage {
+            client?.flushOfflineErrors()
+        }
+
         // Setup ANR detection
         if config.captureAnr {
             setupAnrDetection()

@@ -2,6 +2,12 @@
 
 All notable changes to the RiviumTrace iOS SDK will be documented in this file.
 
+## [0.2.2] - 2026-10-05
+
+### Fixed
+- `enableOfflineStorage` now works: errors that cannot be sent because the device is offline are kept on disk (up to 100) and sent later. Set it to `false` to keep nothing on disk.
+- The stated requirement is corrected to Swift 5.10 / Xcode 15.3; the SDK already needed it.
+
 ## [0.2.1] - 2026-09-28
 
 ### Added

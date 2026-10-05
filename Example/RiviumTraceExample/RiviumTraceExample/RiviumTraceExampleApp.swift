@@ -6,7 +6,7 @@ struct RiviumTraceExampleApp: App {
 
     init() {
         // Initialize RiviumTrace SDK
-        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_8a51c84264f6360dd8f7c914491d8ba0d51476429d17935e")
+        let config = RiviumTraceConfigBuilder(apiKey: "rv_live_your_api_key")
             .environment("development")
             .release(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String)
             .debug(true)

@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Official iOS SDK for [RiviumTrace](https://rivium.co/cloud/rivium-trace) - Error tracking, crash detection, and performance monitoring for iOS, macOS, tvOS, and watchOS apps.
+Official iOS SDK for [RiviumTrace](https://rivium.co/cloud/rivium-trace) - Error tracking, crash detection, and performance monitoring for iOS, macOS, and tvOS apps.
 
 **[RiviumTrace Landing Page](https://rivium.co/cloud/rivium-trace)** | **[Documentation](https://rivium.co/cloud/rivium-trace/docs/sdks-ios)** | **[Issues](https://github.com/Rivium-co/rivium-trace-ios-sdk/issues)**
 
@@ -17,7 +17,7 @@ Official iOS SDK for [RiviumTrace](https://rivium.co/cloud/rivium-trace) - Error
 - **Logging** - Structured logging with batching, exponential backoff retries, and level-based filtering
 - **HTTP Tracking** - Automatic HTTP breadcrumbs and error capturing via URLProtocol
 - **Tags & Context** - User sessions, global extras, tags, and custom metadata
-- **Multi-Platform** - iOS 12+, macOS 10.14+, tvOS 12+, watchOS 5+
+- **Multi-Platform** - iOS 12+, macOS 10.14+, tvOS 12+
 - **Zero Dependencies** - Pure Foundation-based, no external libraries
 
 ## Installation
@@ -28,7 +28,7 @@ Add the following to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Rivium-co/rivium-trace-ios-sdk.git", from: "0.2.1")
+    .package(url: "https://github.com/Rivium-co/rivium-trace-ios-sdk.git", from: "0.2.2")
 ]
 ```
 
@@ -424,7 +424,7 @@ RiviumTrace.shared.close()
 | `anrTimeoutMs` | 5000 | ANR detection timeout (milliseconds) |
 | `maxBreadcrumbs` | 20 | Maximum breadcrumbs to store |
 | `httpTimeout` | 30 | HTTP request timeout (seconds) |
-| `enableOfflineStorage` | true | Cache errors when offline |
+| `enableOfflineStorage` | true | Keep errors that could not be sent because the device was offline (up to 100, on disk) and send them on the next launch or once an error goes through again |
 | `sampleRate` | 1.0 | Error capture sample rate (0.0 - 1.0) |
 
 ## SwiftUI Integration
@@ -525,12 +525,11 @@ struct MyApp: App {
 | iOS | 12.0 | Supported |
 | macOS | 10.14 | Supported |
 | tvOS | 12.0 | Supported |
-| watchOS | 5.0 | Supported |
 
 ## Minimum Requirements
 
-- **Swift 5.5+**
-- **Xcode 13+**
+- **Swift 5.10+**
+- **Xcode 15.3+**
 - **No external dependencies**
 
 ## License

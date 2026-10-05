@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'RiviumTrace'
-  s.version          = '0.2.1'
+  s.version          = '0.2.2'
   s.summary          = 'Error tracking, logging, and performance monitoring SDK for iOS'
   s.description      = <<-DESC
     RiviumTrace is a comprehensive error tracking, logging, and performance monitoring SDK for iOS applications.
@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '12.0'
   s.osx.deployment_target = '10.14'
 
-  s.swift_versions = ['5.0', '5.5', '5.7', '5.9']
+  s.swift_versions = ['5.10']
 
   s.source_files = 'Sources/RiviumTrace/**/*'
 
