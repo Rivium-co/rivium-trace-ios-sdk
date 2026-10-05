@@ -10,15 +10,15 @@ Official iOS SDK for [RiviumTrace](https://rivium.co/cloud/rivium-trace) - Error
 
 - **Error Tracking** - Automatically capture uncaught exceptions and crashes
 - **ANR Detection** - Detect Application Not Responding events (main thread blocked)
-- **Signal Crash Detection** - Detect SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGPIPE, SIGSYS, SIGTRAP
-- **Crash Detection** - Detect native crashes from previous sessions via marker system
+- **Signal Crash Detection** - Detect SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGTRAP
+- **Crash Detection** - Report native crashes from the previous session on the next launch, with a full crash report (threads, registers, binary images)
 - **Breadcrumbs** - Track user actions leading up to errors
 - **Performance Monitoring** - HTTP request timing, custom span tracking, and batched reporting
 - **Logging** - Structured logging with batching, exponential backoff retries, and level-based filtering
 - **HTTP Tracking** - Automatic HTTP breadcrumbs and error capturing via URLProtocol
 - **Tags & Context** - User sessions, global extras, tags, and custom metadata
 - **Multi-Platform** - iOS 12+, macOS 10.14+, tvOS 12+
-- **Zero Dependencies** - Pure Foundation-based, no external libraries
+- **Nothing Else to Install** - No external packages to resolve; PLCrashReporter (MIT) is bundled with the SDK
 
 ## Installation
 
@@ -347,9 +347,9 @@ RiviumTrace.shared.flushLogs { success in
 
 ### Logging Features
 
-- **Batching** - Logs are buffered and sent in configurable batches (default: 50)
+- **Batching** - Logs are buffered and sent in configurable batches (default: 50). They go out as one batch request when `sourceId` is set; without it each buffered log is sent in its own request
 - **Auto-flush** - Timer flushes logs at a configurable interval (default: 5s)
-- **Exponential backoff** - Failed sends retry with delays: 1s, 2s, 4s, 8s... up to 60s
+- **Exponential backoff** - A failed batch is retried with delays: 2s, 4s, 8s... up to 60s (max 10 attempts). Logs sent without a `sourceId` are not retried
 - **Buffer limit** - Max 1000 logs in buffer; oldest logs dropped when exceeded
 - **Lazy timer** - Flush timer only runs when the buffer has logs
 - **Lifecycle-aware** - Automatically flushes when app goes to background
@@ -360,7 +360,7 @@ Enable automatic HTTP breadcrumb tracking and error capturing:
 
 ```swift
 // Option 1: Enable globally
-RiviumTraceURLProtocol.enable()
+RiviumTraceHttpBreadcrumbProtocol.enable()
 
 // Option 2: Use RiviumTrace session
 let session = URLSession.riviumTraceSession()
@@ -369,8 +369,8 @@ session.dataTask(with: url) { data, response, error in
 }.resume()
 
 // Configure HTTP error capturing
-RiviumTraceURLProtocol.captureHttpErrors = true     // Capture 5xx server errors (default: true)
-RiviumTraceURLProtocol.captureClientErrors = false   // Also capture 4xx client errors (default: false)
+RiviumTraceHttpBreadcrumbProtocol.captureHttpErrors = true     // Capture 5xx server errors and failed requests (default: true)
+RiviumTraceHttpBreadcrumbProtocol.captureClientErrors = false   // Also capture 4xx client errors (default: false)
 ```
 
 ### Automatic Privacy Protection
@@ -384,24 +384,35 @@ The HTTP tracker automatically redacts sensitive query parameters:
 
 ### How It Works
 
-RiviumTrace uses a marker-based crash detection system that works for all crash types:
+RiviumTrace reports crashes through the bundled PLCrashReporter and a main-thread watchdog:
 
-1. **On SDK Init**: Creates a crash marker file
-2. **On Graceful Shutdown**: Deletes the marker via `RiviumTrace.shared.close()`
-3. **On Next Launch**: If marker exists, a crash occurred - sends report
+1. **On SDK Init**: Installs PLCrashReporter's handlers for fatal signals (SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGTRAP) and uncaught `NSException`s
+2. **On Crash**: A crash report is written to disk inside the app sandbox. Nothing is sent at that moment
+3. **On Next Launch**: `initialize` finds the report, sends it and deletes it. If the device is offline, the report is kept on disk (see `enableOfflineStorage`) and sent later
+
+The crash report contains the signal name and code, the fault address, every thread with its stack frames, the registers of the crashed thread and the binary image UUIDs needed for dSYM symbolication. For an uncaught `NSException` it also contains the exception name and reason.
+
+Hangs are detected separately: a background timer checks that the main thread responds, and when it has not responded for `anrTimeoutMs` the SDK sends an ANR report while the app is still running.
 
 ### Types of Crashes Detected
 
 | Crash Type | Detection | Notes |
 |------------|-----------|-------|
-| Swift/ObjC Exceptions | Real-time | Captured immediately |
-| ANR Events | Real-time | Main thread blocked for 5+ seconds |
-| Signal Crashes (SIGSEGV, etc.) | Next Launch | Via crash marker |
-| Memory Crashes | Next Launch | Via crash marker |
+| Uncaught ObjC Exceptions (`NSException`) | Next Launch | In the crash report, with exception name and reason. Sent before the process exits instead when `captureSignalCrashes` is off |
+| Swift Runtime Errors (`fatalError`, force-unwrapping `nil`, etc.) | Next Launch | Reported as signal crashes |
+| Signal Crashes (SIGSEGV, etc.) | Next Launch | SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGTRAP |
+| ANR Events | Real-time | Main thread blocked for `anrTimeoutMs` (default 5 seconds) |
+| Memory Crashes | Not captured | The system ends the process without a signal the app can handle |
+
+### What Is Not Captured
+
+- **Terminations by the system or the user** - Out-of-memory kills, system watchdog timeouts and force quits leave no crash report.
+- **SIGPIPE and SIGSYS** - No handler is installed for these signals.
+- **Context on crash and ANR reports** - Crash reports from a previous session and ANR reports do not include breadcrumbs, user ID, extras or tags. They do carry the device and app context described above.
 
 ### Graceful Shutdown
 
-The SDK automatically handles graceful shutdown via app lifecycle notifications. You can also call it manually:
+Crash detection does not depend on `close()`. The SDK calls `close()` itself when the app terminates (via the app's will-terminate notification); it flushes buffered logs, stops the ANR watchdog and shuts down the HTTP client. After `close()` the SDK sends no more errors, messages or performance spans in that process. You can also call it manually:
 
 ```swift
 // Manual cleanup (optional - auto-handled via notifications)
@@ -412,14 +423,14 @@ RiviumTrace.shared.close()
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `apiKey` | Required | Your API key from Rivium Console (`rv_live_xxx` or `rv_test_xxx`) |
+| `apiKey` | Required | Your API key from Rivium Console. Must start with `rv_live_`; any other value stops the app with a precondition failure when the config is created |
 | `apiUrl` | `https://trace.rivium.co` | API URL — set for self-hosted only |
 | `environment` | `"production"` | Environment name (production, staging, etc.) |
 | `release` | nil | App version string (auto-detected if nil) |
 | `debug` | false | Enable debug logging |
 | `enabled` | true | Enable/disable SDK |
-| `captureUncaughtExceptions` | true | Capture uncaught exceptions |
-| `captureSignalCrashes` | true | Capture signal crashes (SIGSEGV, etc.) |
+| `captureUncaughtExceptions` | true | Send uncaught `NSException`s from the SDK's own handler before the process exits. Takes effect only when `captureSignalCrashes` is false; otherwise they arrive in the crash report on the next launch |
+| `captureSignalCrashes` | true | Capture fatal signals (SIGSEGV, etc.) and uncaught `NSException`s as crash reports, sent on the next launch |
 | `captureAnr` | true | Detect ANR events (main thread blocked) |
 | `anrTimeoutMs` | 5000 | ANR detection timeout (milliseconds) |
 | `maxBreadcrumbs` | 20 | Maximum breadcrumbs to store |
@@ -524,13 +535,13 @@ struct MyApp: App {
 |----------|----------------|--------|
 | iOS | 12.0 | Supported |
 | macOS | 10.14 | Supported |
-| tvOS | 12.0 | Supported |
+| tvOS | 12.0 | Supported (Swift Package Manager only) |
 
 ## Minimum Requirements
 
 - **Swift 5.10+**
 - **Xcode 15.3+**
-- **No external dependencies**
+- **No external dependencies to install** (PLCrashReporter is bundled with the SDK)
 
 ## License
 
