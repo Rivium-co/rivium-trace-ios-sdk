@@ -56,6 +56,10 @@ public class RiviumTrace: @unchecked Sendable {
 
     private let queue = DispatchQueue(label: "co.rivium.trace.main")
 
+    /// Reads and sends the crash report of the previous session, so that
+    /// `initialize` never waits for the disk or the network.
+    private let pendingCrashQueue = DispatchQueue(label: "co.rivium.trace.pending-crash", qos: .utility)
+
     // MARK: - Initialization
 
     private init() {}
@@ -99,19 +103,15 @@ public class RiviumTrace: @unchecked Sendable {
             setupUncaughtExceptionHandler()
         }
 
-        // Native crash capture (POSIX signals + Mach exceptions) via PLCrashReporter.
-        // Step 1: drain any crash report left by the previous session.
-        // Step 2: install handlers for this session.
+        // Native crash capture (POSIX signals + Mach exceptions) via PLCrashReporter:
+        // install the handlers for this session.
         if config.captureSignalCrashes {
-            sendPendingNativeCrashIfAny()
             NativeCrashReporter.shared.install()
         }
 
-        // Retry errors that could not be sent earlier because the device was
-        // offline. Runs in the background.
-        if config.enableOfflineStorage {
-            client?.flushOfflineErrors()
-        }
+        // In the background: send any crash report left by the previous
+        // session, then retry errors that could not be sent earlier.
+        sendPendingReportsInBackground()
 
         // Setup ANR detection
         if config.captureAnr {
@@ -674,18 +674,33 @@ public class RiviumTrace: @unchecked Sendable {
         return merged
     }
 
-    private func sendPendingNativeCrashIfAny() {
-        guard let cfg = config else { return }
-        guard let error = NativeCrashReporter.shared.loadPendingCrashReport(
-            environment: cfg.environment,
-            releaseVersion: cfg.release ?? DeviceInfo.shared.appVersion,
-            userAgent: userAgent
-        ) else { return }
+    /// Hand the crash report of the previous session (if any) and the errors
+    /// in the offline store to the network, off the calling thread.
+    ///
+    /// The crash report comes first, so that when it goes through the offline
+    /// store it is part of the same pass as the errors already there.
+    private func sendPendingReportsInBackground() {
+        guard let cfg = config, let client = client else { return }
+        guard cfg.captureSignalCrashes || cfg.enableOfflineStorage else { return }
 
-        logInfo("Sending native crash from previous session")
-        // Send synchronously so the report is delivered before any other init
-        // step risks pushing it out of the network queue.
-        _ = client?.sendErrorSync(error)
+        let captureCrashes = cfg.captureSignalCrashes
+        let offlineStorage = cfg.enableOfflineStorage
+        let environment = cfg.environment
+        let releaseVersion = cfg.release ?? DeviceInfo.shared.appVersion
+        let userAgent = self.userAgent
+
+        pendingCrashQueue.async {
+            if captureCrashes {
+                PendingCrashReportSender(source: NativeCrashReporter.shared, client: client).sendPendingReport(
+                    environment: environment,
+                    releaseVersion: releaseVersion,
+                    userAgent: userAgent
+                )
+            }
+            if offlineStorage {
+                client.flushOfflineErrors()
+            }
+        }
     }
 
     private func setupUncaughtExceptionHandler() {

@@ -14,7 +14,7 @@ import CrashReporter
 /// PLCrashReporter is vendored as a static xcframework at
 /// `Frameworks/CrashReporter.xcframework/` and shipped under the MIT
 /// license preserved in `THIRD_PARTY_NOTICES.txt`.
-final class NativeCrashReporter: @unchecked Sendable {
+final class NativeCrashReporter: PendingCrashReportSource, @unchecked Sendable {
 
     static let shared = NativeCrashReporter()
 
@@ -49,20 +49,22 @@ final class NativeCrashReporter: @unchecked Sendable {
     }
 
     /// Check for a pending crash report written by a previous session and
-    /// hand it back as a `RiviumTraceError` ready to send.
+    /// hand it back ready to send.
+    ///
+    /// The report stays on disk: call `purgePendingCrashReport()` once it is
+    /// delivered or stored elsewhere. Only a report that cannot be read is
+    /// removed here, because it could never be sent.
+    ///
+    /// Reads and parses a file; not for use on the main thread.
     ///
     /// Returns `nil` if there is no pending report.
     func loadPendingCrashReport(
         environment: String,
         releaseVersion: String?,
         userAgent: String?
-    ) -> RiviumTraceError? {
+    ) -> PendingCrashReport? {
         #if canImport(CrashReporter)
-        let config = PLCrashReporterConfig(
-            signalHandlerType: .BSD,
-            symbolicationStrategy: []
-        )
-        guard let reporter = PLCrashReporter(configuration: config) else { return nil }
+        guard let reporter = makeReporter() else { return nil }
         guard reporter.hasPendingCrashReport() else { return nil }
 
         do {
@@ -74,8 +76,7 @@ final class NativeCrashReporter: @unchecked Sendable {
                 releaseVersion: releaseVersion,
                 userAgent: userAgent
             )
-            try? reporter.purgePendingCrashReportAndReturnError()
-            return error
+            return PendingCrashReport(id: PendingCrashReport.identifier(for: data), error: error)
         } catch {
             logError("Failed to load pending crash report: \(error.localizedDescription)")
             try? reporter.purgePendingCrashReportAndReturnError()
@@ -85,6 +86,28 @@ final class NativeCrashReporter: @unchecked Sendable {
         return nil
         #endif
     }
+
+    /// Delete the pending crash report of a previous session.
+    func purgePendingCrashReport() {
+        #if canImport(CrashReporter)
+        guard let reporter = makeReporter() else { return }
+        do {
+            try reporter.purgePendingCrashReportAndReturnError()
+        } catch {
+            logError("Failed to remove pending crash report: \(error.localizedDescription)")
+        }
+        #endif
+    }
+
+    #if canImport(CrashReporter)
+    private func makeReporter() -> PLCrashReporter? {
+        let config = PLCrashReporterConfig(
+            signalHandlerType: .BSD,
+            symbolicationStrategy: []
+        )
+        return PLCrashReporter(configuration: config)
+    }
+    #endif
 
     #if canImport(CrashReporter)
     private func mapReportToError(

@@ -2,6 +2,12 @@
 
 All notable changes to the RiviumTrace iOS SDK will be documented in this file.
 
+## [0.2.3] - 2026-10-05
+
+### Fixed
+- `initialize` no longer waits for the network: the crash report of the previous session is sent in the background. Before, a slow or dead connection could freeze app launch for up to `httpTimeout` (30 seconds by default).
+- A crash report is no longer lost when the server answers with an error, when the app is closed while the report is being sent, or when the device is offline and `enableOfflineStorage` is off. It is kept and sent on a later launch.
+
 ## [0.2.2] - 2026-10-05
 
 ### Fixed

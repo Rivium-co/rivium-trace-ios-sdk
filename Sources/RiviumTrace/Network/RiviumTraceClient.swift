@@ -142,6 +142,53 @@ public class RiviumTraceClient: @unchecked Sendable {
         }
     }
 
+    /// Hand over the crash report of a previous session and report what
+    /// became of it, so the caller knows whether its own copy may go.
+    ///
+    /// With offline storage on, the report is written to the offline store
+    /// under `id` (a report already stored under that id is not added again)
+    /// and sent by the next `flushOfflineErrors()`. Otherwise, or when the
+    /// store cannot be written, it is sent directly.
+    ///
+    /// Writes a file when offline storage is on: not for the main thread.
+    /// Never waits for the network; `completion` runs on a background queue
+    /// unless the report was stored or cannot be encoded.
+    func deliverCrashReport(
+        _ error: RiviumTraceError,
+        id: String,
+        completion: @escaping (PendingCrashReportOutcome) -> Void
+    ) {
+        let body: Data
+        do {
+            body = try Self.encodeBody(Self.payload(for: error))
+        } catch {
+            completion(.unsendable)
+            return
+        }
+
+        if let store = offlineStore, store.addAndWait(body, id: "crash-\(id)") {
+            completion(.stored)
+            return
+        }
+
+        send(url: errorsURL, body: body) { result in
+            switch result {
+            case .success:
+                completion(.delivered)
+            case .failure(RiviumTraceClientError.httpError(let status)) where Self.isFinalRejection(status):
+                completion(.rejected)
+            case .failure:
+                completion(.stillPending)
+            }
+        }
+    }
+
+    /// True for an HTTP status that will not change on a retry: 4xx except
+    /// 408 (request timeout) and 429 (too many requests).
+    static func isFinalRejection(_ status: Int) -> Bool {
+        return (400...499).contains(status) && status != 408 && status != 429
+    }
+
     /// Try to send the errors kept in the offline store, oldest first.
     ///
     /// Returns immediately; the work happens off the calling thread. An entry
@@ -187,7 +234,7 @@ public class RiviumTraceClient: @unchecked Sendable {
                 store.remove(id: entry.id)
                 logDebug("Stored error sent successfully")
             case .failure(RiviumTraceClientError.httpError(let status)):
-                if (400...499).contains(status) && status != 408 && status != 429 {
+                if Self.isFinalRejection(status) {
                     store.remove(id: entry.id)
                     logWarn("Stored error rejected by server (\(status)), dropped")
                 } else {

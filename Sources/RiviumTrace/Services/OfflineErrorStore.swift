@@ -67,6 +67,35 @@ final class OfflineErrorStore: @unchecked Sendable {
         }
     }
 
+    /// Add a body under an id chosen by the caller and wait until it is on
+    /// disk. An id that is already stored is left as it is, so the same
+    /// report is never queued twice.
+    ///
+    /// Blocks on the store's queue: not for the main thread, and never from
+    /// the store's own queue.
+    ///
+    /// - Returns: `true` when the body is on disk (now or already), `false`
+    ///   when it could not be written; nothing is kept in that case.
+    func addAndWait(_ body: Data, id: String) -> Bool {
+        return queue.sync { () -> Bool in
+            loadIfNeeded()
+            if entries.contains(where: { $0.id == id }) {
+                return true
+            }
+            let previous = entries
+            entries.append(Entry(id: id, body: body))
+            if entries.count > maxEntries {
+                entries.removeFirst(entries.count - maxEntries)
+            }
+            guard persist() else {
+                entries = previous
+                return false
+            }
+            logDebug("Error stored offline for later sending (\(entries.count) stored)")
+            return true
+        }
+    }
+
     /// Remove one entry after the server has answered for it.
     func remove(id: String) {
         queue.async { [self] in
@@ -155,8 +184,9 @@ final class OfflineErrorStore: @unchecked Sendable {
         }
     }
 
-    private func persist() {
-        guard let url = fileURL() else { return }
+    @discardableResult
+    private func persist() -> Bool {
+        guard let url = fileURL() else { return false }
 
         var list: [[String: String]] = []
         list.reserveCapacity(entries.count)
@@ -179,8 +209,10 @@ final class OfflineErrorStore: @unchecked Sendable {
             values.isExcludedFromBackup = true
             var mutableURL = url
             try? mutableURL.setResourceValues(values)
+            return true
         } catch {
             logError("Failed to write offline errors: \(error.localizedDescription)")
+            return false
         }
     }
 

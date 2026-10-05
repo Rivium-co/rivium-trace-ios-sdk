@@ -28,7 +28,7 @@ Add the following to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Rivium-co/rivium-trace-ios-sdk.git", from: "0.2.2")
+    .package(url: "https://github.com/Rivium-co/rivium-trace-ios-sdk.git", from: "0.2.3")
 ]
 ```
 
@@ -388,7 +388,7 @@ RiviumTrace reports crashes through the bundled PLCrashReporter and a main-threa
 
 1. **On SDK Init**: Installs PLCrashReporter's handlers for fatal signals (SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGTRAP) and uncaught `NSException`s
 2. **On Crash**: A crash report is written to disk inside the app sandbox. Nothing is sent at that moment
-3. **On Next Launch**: `initialize` finds the report, sends it and deletes it. If the device is offline, the report is kept on disk (see `enableOfflineStorage`) and sent later
+3. **On Next Launch**: `initialize` returns without waiting; the report is read and sent in the background. It is deleted only once it is safe: with `enableOfflineStorage` on it is first moved to the offline store and sent from there (again later if the network or the server fails); with it off it stays in place until the server answers and is tried again on every launch. Only the latest crash report is kept this way, so a new crash replaces one that was never sent
 
 The crash report contains the signal name and code, the fault address, every thread with its stack frames, the registers of the crashed thread and the binary image UUIDs needed for dSYM symbolication. For an uncaught `NSException` it also contains the exception name and reason.
 
@@ -435,7 +435,7 @@ RiviumTrace.shared.close()
 | `anrTimeoutMs` | 5000 | ANR detection timeout (milliseconds) |
 | `maxBreadcrumbs` | 20 | Maximum breadcrumbs to store |
 | `httpTimeout` | 30 | HTTP request timeout (seconds) |
-| `enableOfflineStorage` | true | Keep errors that could not be sent because the device was offline (up to 100, on disk) and send them on the next launch or once an error goes through again |
+| `enableOfflineStorage` | true | Keep errors that could not be sent because the device was offline, and crash reports until the server has accepted them (up to 100, on disk), and send them on the next launch or once an error goes through again |
 | `sampleRate` | 1.0 | Error capture sample rate (0.0 - 1.0) |
 
 ## SwiftUI Integration
