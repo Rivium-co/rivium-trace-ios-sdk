@@ -2,6 +2,11 @@
 
 All notable changes to the RiviumTrace iOS SDK will be documented in this file.
 
+## [0.2.5] - 2026-10-28
+
+### Fixed
+- One hang is one ANR report. Before, a report was sent every few seconds for as long as the main thread stayed blocked.
+
 ## [0.2.4] - 2026-10-05
 
 ### Added

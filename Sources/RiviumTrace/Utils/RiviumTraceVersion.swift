@@ -2,5 +2,5 @@ import Foundation
 
 /// Central SDK version constant
 public enum RiviumTraceSDK {
-    public static let version = "0.2.4"
+    public static let version = "0.2.5"
 }

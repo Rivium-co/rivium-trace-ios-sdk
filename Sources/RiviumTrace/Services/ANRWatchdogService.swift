@@ -19,6 +19,9 @@ public class ANRWatchdogService: @unchecked Sendable {
     /// Last main thread response time
     private var lastResponseTime: Date = Date()
 
+    /// The hang already reported, named by the main thread's last answer before it; nil = none
+    private var reportedHang: Date?
+
     /// Is the watchdog running
     private var isRunning = false
 
@@ -29,6 +32,15 @@ public class ANRWatchdogService: @unchecked Sendable {
     private let watchdogQueue = DispatchQueue(label: "co.rivium.trace.anrwatchdog", qos: .utility)
 
     private init() {}
+
+    /// A separate watchdog for tests; the app uses `shared`.
+    static func makeForTesting() -> ANRWatchdogService { ANRWatchdogService() }
+
+    /// True when the hang that started after `lastAnswer` was not reported yet. A hang lasts until the
+    /// main thread answers again, so it is reported once however many checks it spans.
+    static func isNewHang(lastAnswer: Date, reportedHang: Date?) -> Bool {
+        return reportedHang != lastAnswer
+    }
 
     /// Start the ANR watchdog
     /// - Parameters:
@@ -44,6 +56,7 @@ public class ANRWatchdogService: @unchecked Sendable {
         self.anrCallback = callback
         self.isMainThreadResponsive = true
         self.lastResponseTime = Date()
+        self.reportedHang = nil
         self.isRunning = true
 
         // Create watchdog timer on background queue
@@ -89,7 +102,9 @@ public class ANRWatchdogService: @unchecked Sendable {
             if !self.isMainThreadResponsive {
                 let timeSinceLastResponse = Date().timeIntervalSince(self.lastResponseTime)
 
-                if timeSinceLastResponse * 1000 >= Double(self.timeoutMs) {
+                if timeSinceLastResponse * 1000 >= Double(self.timeoutMs),
+                   ANRWatchdogService.isNewHang(lastAnswer: self.lastResponseTime, reportedHang: self.reportedHang) {
+                    self.reportedHang = self.lastResponseTime
                     self.handleANRDetected()
                 }
             }
