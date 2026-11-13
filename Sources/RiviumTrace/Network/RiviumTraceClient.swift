@@ -544,6 +544,39 @@ public class RiviumTraceClient: @unchecked Sendable {
         }.resume()
     }
 
+    /// POST release health reports (an encoded `{"sessions": [...]}` body).
+    ///
+    /// - Parameter completion: Called once with the HTTP status code, or
+    ///   `nil` when there was no answer (network failure, SDK shut down).
+    func sendSessions(_ body: Data, completion: @escaping (Int?) -> Void) {
+        guard let url = URL(string: "\(baseURL)/api/sessions") else {
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(config.apiKey, forHTTPHeaderField: "X-API-Key")
+        request.httpBody = body
+
+        sessionLock.lock()
+        guard !isShutDown else {
+            sessionLock.unlock()
+            completion(nil)
+            return
+        }
+        let task = session.dataTask(with: request) { _, response, error in
+            if error != nil {
+                completion(nil)
+                return
+            }
+            completion((response as? HTTPURLResponse)?.statusCode)
+        }
+        sessionLock.unlock()
+        task.resume()
+    }
+
     /// Shutdown the client
     public func shutdown() {
         sessionLock.lock()

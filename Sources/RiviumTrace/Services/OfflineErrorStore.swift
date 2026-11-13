@@ -230,7 +230,7 @@ final class OfflineErrorStore: @unchecked Sendable {
 
     /// Application Support, or Caches where Application Support cannot be
     /// written (tvOS).
-    private static func defaultDirectory() -> URL? {
+    static func defaultDirectory() -> URL? {
         let fileManager = FileManager.default
         let candidates: [FileManager.SearchPathDirectory] = [.applicationSupportDirectory, .cachesDirectory]
 

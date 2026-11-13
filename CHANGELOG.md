@@ -2,6 +2,11 @@
 
 All notable changes to the RiviumTrace iOS SDK will be documented in this file.
 
+## 0.3.0 - 2026-11-14
+
+- Release health: the SDK reports app sessions, so RiviumTrace shows crash-free sessions and users per release. A session starts at launch and again after 30 minutes in the background; it counts as crashed after an uncaught exception or a native crash. Only a random install id made by the SDK is sent, never a device id. On by default; turn it off with `enableReleaseHealth: false`.
+- Errors carry the id of the current session.
+
 ## [0.2.5] - 2026-10-28
 
 ### Fixed

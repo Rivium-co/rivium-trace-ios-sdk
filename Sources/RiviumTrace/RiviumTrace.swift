@@ -52,6 +52,7 @@ public class RiviumTrace: @unchecked Sendable {
     private var tags: [String: String] = [:]
 
     private var logService: LogService?
+    private var releaseHealth: ReleaseHealth?
     private var previousExceptionHandler: NSExceptionHandler?
 
     private let queue = DispatchQueue(label: "co.rivium.trace.main")
@@ -101,6 +102,25 @@ public class RiviumTrace: @unchecked Sendable {
         // Setup uncaught exception handler
         if config.captureUncaughtExceptions {
             setupUncaughtExceptionHandler()
+        }
+
+        // Release health: one session per launch. Whether the previous run
+        // ended in a native crash is read before the crash reporter starts and
+        // before its report is sent and removed.
+        if config.enableReleaseHealth, let client = client {
+            let previousCrashAt = config.captureSignalCrashes ? NativeCrashReporter.shared.pendingCrashDate() : nil
+            let health = ReleaseHealth(
+                platform: "ios",
+                environment: config.environment,
+                release: config.release ?? DeviceInfo.shared.appVersion,
+                userId: { [weak self] in self?.userId },
+                fileURL: ReleaseHealth.defaultFileURL(),
+                transport: { body, completion in client.sendSessions(body, completion: completion) },
+                previousCrashAt: previousCrashAt
+            )
+            releaseHealth = health
+            sessionId = health.sessionId
+            health.start()
         }
 
         // Native crash capture (POSIX signals + Mach exceptions) via PLCrashReporter:
@@ -657,7 +677,7 @@ public class RiviumTrace: @unchecked Sendable {
     private func mergeExtra(_ extra: [String: Any]) -> [String: Any] {
         var merged = extraContext
         merged["user_id"] = userId
-        merged["session_id"] = sessionId
+        merged["session_id"] = releaseHealth?.sessionId ?? sessionId
         // device_info / app_info / _sdk are added to every payload by
         // RiviumTraceClient.payload(for:), so crash and ANR reports carry them too.
         for (key, value) in extra {
@@ -728,6 +748,9 @@ public class RiviumTrace: @unchecked Sendable {
 
         // Send synchronously to ensure delivery before crash
         _ = client?.sendErrorSync(error)
+
+        // The session crashed: on disk before the process dies, sent if quick.
+        releaseHealth?.markCrashed(wait: min(cfg.httpTimeout, 3))
     }
 
     private func setupAppLifecycleObservers() {
@@ -766,10 +789,12 @@ public class RiviumTrace: @unchecked Sendable {
 
     @objc private func appDidEnterBackground() {
         BreadcrumbService.shared.addSystem("App entered background")
+        releaseHealth?.paused()
     }
 
     @objc private func appWillEnterForeground() {
         BreadcrumbService.shared.addSystem("App entered foreground")
+        releaseHealth?.resumed()
     }
 
     @objc private func appWillTerminate() {

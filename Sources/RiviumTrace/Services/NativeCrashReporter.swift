@@ -85,6 +85,20 @@ final class NativeCrashReporter: PendingCrashReportSource, @unchecked Sendable {
         #endif
     }
 
+    /// When the pending crash report of a previous run was written (the time
+    /// of that crash), or `nil` when there is none. Only looks at the file, so
+    /// it is cheap; call it before the report is sent and removed.
+    func pendingCrashDate() -> Date? {
+        #if canImport(CrashReporter)
+        guard let reporter = makeReporter(), reporter.hasPendingCrashReport() else { return nil }
+        guard let path = reporter.crashReportPath(),
+              let attributes = try? FileManager.default.attributesOfItem(atPath: path) else { return nil }
+        return attributes[FileAttributeKey.modificationDate] as? Date
+        #else
+        return nil
+        #endif
+    }
+
     /// Delete the pending crash report of a previous session.
     func purgePendingCrashReport() {
         #if canImport(CrashReporter)

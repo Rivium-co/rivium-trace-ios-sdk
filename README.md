@@ -419,6 +419,18 @@ Crash detection does not depend on `close()`. The SDK calls `close()` itself whe
 RiviumTrace.shared.close()
 ```
 
+## Release health
+
+The SDK counts app sessions so RiviumTrace can show how many sessions and users of each release are crash-free. A session starts when the app launches, and a new one starts when the app comes back after 30 minutes or more in the background. A session counts as crashed when it ends in an uncaught `NSException` or a native crash. Hangs, a normal quit and the system closing the app in the background are not crashes.
+
+For each session the SDK sends a random install id made by the SDK on first launch (never a device id or advertising id), a random session id, the start time, the release, the environment and the user id you set with `setUserId`. Sessions that cannot be sent while offline are kept and sent later. Sessions are free.
+
+To turn it off:
+
+```swift
+let config = RiviumTraceConfig(apiKey: "rv_live_your_api_key", enableReleaseHealth: false)
+```
+
 ## Configuration
 
 | Option | Default | Description |

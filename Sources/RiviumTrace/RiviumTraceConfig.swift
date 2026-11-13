@@ -45,6 +45,11 @@ public struct RiviumTraceConfig {
     /// Base URL for the RiviumTrace API. Override for self-hosted deployments.
     public let apiUrl: String
 
+    /// Release health: report app sessions and crash-free rates per release.
+    /// Each session sends a random install id made by the SDK (never a device
+    /// id). On by default; `false` sends nothing.
+    public let enableReleaseHealth: Bool
+
     /// Initialize with all options
     public init(
         apiKey: String,
@@ -60,7 +65,8 @@ public struct RiviumTraceConfig {
         httpTimeout: TimeInterval = 30,
         enableOfflineStorage: Bool = true,
         sampleRate: Double = 1.0,
-        apiUrl: String = "https://trace.rivium.co"
+        apiUrl: String = "https://trace.rivium.co",
+        enableReleaseHealth: Bool = true
     ) {
         precondition(!apiKey.isEmpty, "API key cannot be empty")
         precondition(apiKey.hasPrefix("rv_live_"), "API key must start with rv_live_")
@@ -83,6 +89,7 @@ public struct RiviumTraceConfig {
         self.enableOfflineStorage = enableOfflineStorage
         self.sampleRate = sampleRate
         self.apiUrl = apiUrl
+        self.enableReleaseHealth = enableReleaseHealth
     }
 
     /// Create a simple config with just API key
@@ -107,6 +114,7 @@ public class RiviumTraceConfigBuilder {
     private var enableOfflineStorage: Bool = true
     private var sampleRate: Double = 1.0
     private var apiUrl: String = "https://trace.rivium.co"
+    private var enableReleaseHealth: Bool = true
 
     public init(apiKey: String) {
         self.apiKey = apiKey
@@ -190,6 +198,12 @@ public class RiviumTraceConfigBuilder {
         return self
     }
 
+    @discardableResult
+    public func enableReleaseHealth(_ enable: Bool) -> RiviumTraceConfigBuilder {
+        self.enableReleaseHealth = enable
+        return self
+    }
+
     public func build() -> RiviumTraceConfig {
         return RiviumTraceConfig(
             apiKey: apiKey,
@@ -205,7 +219,8 @@ public class RiviumTraceConfigBuilder {
             httpTimeout: httpTimeout,
             enableOfflineStorage: enableOfflineStorage,
             sampleRate: sampleRate,
-            apiUrl: apiUrl
+            apiUrl: apiUrl,
+            enableReleaseHealth: enableReleaseHealth
         )
     }
 }
